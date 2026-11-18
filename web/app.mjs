@@ -167,7 +167,7 @@ async function open(){
     layer=L.layerGroup().addTo(map);map.on('moveend',mapPoints);
   }
   $('coverage').textContent=data.lights.length.toLocaleString()+' lights · 3 Coast Guard volumes';
-  $('dates').textContent='Index retrieved '+data.retrieved+'. Covers '+Object.keys(data.sections).length+' sections. '+data.omitted+' source rows lack a usable characteristic, position or identifier and are excluded.';
+  $('dates').textContent=(data.retrieved ? 'Index retrieved '+data.retrieved : 'Retrieval date unrecorded')+'. Covers '+Object.keys(data.sections).length+' sections. '+data.omitted+' source rows lack a usable characteristic, position or identifier and are excluded.';
   $('query').oninput=()=>filter(true);$('coast').onchange=()=>{filter(true);exercise();};
   $('near').onchange=compare;$('more').onclick=()=>{limit+=35;records();};$('new').onclick=exercise;
   window.addEventListener('hashchange',()=>{const id=new URLSearchParams(location.hash.slice(1)).get('light');const r=data.lights.find(l=>l.id===id);if(r&&r!==selected)select(r,true);});
