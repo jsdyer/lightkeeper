@@ -1,12 +1,20 @@
 {
-  "id": "coolcode-tool-template",
-  "title": "CoolCode Tool Starter",
-  "description": "A browser-only example that trims lines and removes exact duplicates.",
-  "category": "security",
-  "tags": ["text", "lines", "duplicates"],
-  "icon": "scan-search",
-  "url": "/coolcode-tool-template/",
-  "source": "https://github.com/jsdyer/coolcode-tool-template",
+  "id": "lightkeeper",
+  "title": "Lightkeeper",
+  "description": "Explore Canadian coastal lights, play their published signals and compare nearby aids.",
+  "category": "places",
+  "tags": [
+    "British Columbia",
+    "Nova Scotia",
+    "Atlantic Canada",
+    "lighthouses",
+    "buoys",
+    "Coast Guard",
+    "signals"
+  ],
+  "icon": "anchor",
+  "url": "/lightkeeper/",
+  "source": "https://github.com/jsdyer/lightkeeper",
   "hosting": "project",
   "access": "browser"
 }

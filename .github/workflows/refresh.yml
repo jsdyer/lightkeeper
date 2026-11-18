@@ -1,0 +1,36 @@
+name: Refresh Coast Guard light tables
+on:
+  schedule:
+    - cron: '31 9 5,20 * *'
+  workflow_dispatch:
+concurrency:
+  group: refresh-lights
+  cancel-in-progress: false
+permissions:
+  contents: write
+  actions: write
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r scripts/requirements.txt
+      - run: python scripts/refresh.py
+      - run: python -m unittest discover -s tests -v && python scripts/build.py
+      - name: Commit checked snapshot and start Pages validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add web/data/lights.json
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "Refresh Canadian Coast Guard light characteristics"
+            git push origin HEAD:main
+          fi
+          gh workflow run pages.yml --ref main

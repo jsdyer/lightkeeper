@@ -1,34 +1,26 @@
-# CoolCode browser tool template
+# Lightkeeper
 
-A starting point for independent tools at `coolcode.ca/<repo>/`: a working local-text
-example, responsive UI, Python standard-library build, Node tests, PR checks and Pages
-publication. No npm install is needed.
+[Open Lightkeeper](https://coolcode.ca/lightkeeper/) · [CoolCode catalogue](https://coolcode.ca/)
 
-## One-time template setup
+Find Canadian light stations and buoys by name, light number, colour or area. Choose a record on the map or in the directory to read its published character, compare neighbouring signals, and share its permalink. Identify mode offers three signals with distinct light characteristics. Playback begins on request. The timeline stays readable while paused.
 
-Enable **Settings → General → Template repository** here. This repository does not
-need Pages enabled: its workflow builds/tests but intentionally skips deployment.
-New copies also skip deployment until `scripts/init.py` sets the tool ID to match
-their repository name. This lets you create the repo before configuring Pages.
+## Data and interpretation
 
-## Start a new tool
+The first snapshot (November 18, 2026) indexes 6,494 positioned lights from all 66 sections of the Pacific, Atlantic, and Newfoundland and Labrador volumes of the [List of Lights, Buoys and Fog Signals](https://notmar.gc.ca/list-lights). This includes inland waters described by these volumes. The Arctic and Inland Waters volumes are outside the index. The original three volumes also contain unlit aids and rows without sufficient position or signal data. The app reports how many rows it omits. Browse by light number in each linked official section.
 
-1. Select **Use this template → Create a new repository**, choose owner `jsdyer`,
-   a unique lowercase name such as `my-tool`, and public visibility.
-2. Clone the new repository. Use Python 3.12+ and Node 24+.
-3. Set the identity, using a slug that matches the repository name:
+When source remarks give a complete sequence, the app displays the flash and eclipse durations. For example, the November 2026 snapshot lists a 1.5-second red flash and 3.5-second eclipse at Peggy's Point. The Point Atkinson entry lists two 0.25-second flashes in a five-second cycle. Isophase intervals are equal by definition. Schematic timelines are labelled, show the reported period, and illustrate the widths of the pulses when durations are absent. Complex and sector entries retain the source notation. Distances are approximate great-circle distances between published positions. Looking at a coast samples markers when more than 650 are in view; all matching records remain available in the directory. The point layer and station directory load independently of background tiles.
 
-```sh
-python3 scripts/init.py my-tool --title "My Tool" --description "Describe what this tool does."
-```
+Use official current charts, publications, and notices for navigation. This independent educational application does not replace them.
 
-Review the category, tags and icon in `tool.json`. `access: "browser"` tells the main
-catalogue that the tool works immediately without installation. `--owner` supports a different
-GitHub owner, but only projects owned by `jsdyer` inherit the CoolCode domain.
+## Source licence
 
-4. Replace the example in `web/` and its tests. Update the privacy explanation,
-   source attribution and README to describe the real tool.
-5. Test and preview:
+Contains information published by the Canadian Coast Guard and Department of Fisheries and Oceans licensed under the [Canadian Coast Guard Open Information Licence](https://www.canada.ca/en/canadian-coast-guard/corporate/publications/open-information-licence.html). This Information is available in its original format for free download on the [Canadian Coast Guard website](https://www.canada.ca/en/canadian-coast-guard.html) and the [Monthly Edition of the Notices to Mariners (NOTMAR) website](https://notmar.gc.ca/).
+
+The light dataset carries this attribution in its metadata. Background map tiles are from [OpenStreetMap contributors](https://www.openstreetmap.org/copyright); Leaflet's licence is in web/vendor/LICENSE. Queries and exercise answers stay in the browser. Map tile requests go to OpenStreetMap.
+
+## Build and refresh
+
+The committed JSON supplies the offline build. The Python standard library and Node.js suffice for the build and model tests.
 
 ```sh
 node --test tests/*.test.mjs
@@ -37,66 +29,6 @@ python3 scripts/build.py
 python3 -m http.server 8000 --directory dist
 ```
 
-Open `http://localhost:8000/`. The example trims lines, skips blanks and removes exact
-duplicates, preserving first-seen order and capitalization. It makes no API requests
-and does not persist text. Update that explanation if your app behaves differently.
+GitHub Actions exercises the built site in Chromium on desktop and mobile. Successful main builds publish dist to GitHub Pages; use the GitHub Actions source in repository Settings → Pages. Review the separate public-page and data retrieval dates in the Sources section. The catalogue can embed [the snapshot date badge](https://coolcode.ca/lightkeeper/data-date.svg).
 
-CI also tests the browser flow and mobile layout at a project subpath. Replace the
-sample assertions in `tests/browser_smoke.py` when implementing your own UI. To run
-that check locally (optional for ordinary preview):
-
-```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install -r tests/browser-requirements.txt
-python3 -m playwright install --with-deps chromium
-python3 tests/browser_smoke.py
-```
-
-Playwright is a test-only dependency; the app and its static build do not use it.
-
-## Publish and register
-
-When the actual tool is ready, in the **new tool repository** set **Settings → Pages → Build and deployment →
-Source → GitHub Actions**. Push to `main`, or manually run **Browser tool · Check and
-publish** after enabling Pages. If the initial deployment ran before Pages was enabled,
-enable it and rerun. PRs only check/build and provide a downloadable preview artifact.
-
-Keep asset paths and module imports relative. Check `https://coolcode.ca/my-tool/`.
-Do not add a CNAME or set `coolcode.ca` as this project's custom domain; the account
-site supplies it. Only successful `main` builds deploy.
-
-After verifying the app, copy the reviewed object from `tool.json` into `data/tools.json`
-in [the main site](https://github.com/jsdyer/jsdyer.github.io). Each tool still builds
-independently. Update the hub record when listing metadata changes; the hub is the
-authority for discovery. Ordinary app updates touch only this repository.
-
-The main site separates **Use in your browser** from **Install yourself**. An app
-that asks for a file is still a browser tool. Standalone Linux packages should start
-in their own repositories with their own build/release workflow, rather than copying
-this browser-only scaffold. Their hub record uses `access: "install"`, links to an
-installation guide, and includes `requirements`.
-
-## Files
-
-| Path | Purpose |
-| --- | --- |
-| `tool.json` | Page metadata and a ready-to-copy catalogue record |
-| `web/` | HTML, responsive CSS, DOM interactions and separate model logic |
-| `scripts/build.py` | Escape metadata and build `web/` into `dist/` |
-| `scripts/init.py` | Set a new project's identity |
-| `tests/` | Application and builder tests |
-| `.github/workflows/pages.yml` | Check PRs and publish successful main builds |
-| `AGENTS.md` | Instructions for future coding work |
-
-Namespace optional storage as `coolcode:<tool-id>:<key>`; CoolCode paths share a
-browser origin. Don't save pasted text/uploads by default. Document external APIs
-and send only the information needed for the selected action. Never embed secrets.
-
-Scheduled refresh is opt-in. Validate source data before deploying, display its date,
-and preserve the last good deployment on failure. Public-repository schedules can
-stop after 60 days without repository activity.
-
-Templates don't propagate future edits automatically. Adopt fixes explicitly and
-consider a versioned reusable workflow once several tools confirm the shared process.
-Choose and add the intended software license before distributing a new project.
+The refresh workflow checks all volume sections twice monthly. To run the same update locally, install the parser with `python3 -m pip install -r scripts/requirements.txt`, then run `python3 scripts/refresh.py`. A failed fetch, changed table format, duplicate final identifier or drop exceeding 10% of eligible lights aborts the update. The workflow commits the validated snapshot and dispatches the normal Pages checks before publication. The coverage and correction dates come from NOTMAR; the retrieval date records when the tables were read. Within a volume the light number identifies records, with a name suffix for a duplicated number in the source.

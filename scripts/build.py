@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build a browser tool using Python's standard library; no network required."""
 from html import escape
+from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -52,6 +53,13 @@ def build(root=ROOT):
             page = page.replace(placeholder, escape(tool[key], quote=True))
         if re.search(r"\{\{[A-Z_]+\}\}", page):
             raise ValueError("Unresolved template placeholder in web/index.html")
+        page = page.replace("BUILD_DATE_UTC", datetime.now(timezone.utc).date().isoformat())
+        retrieved = date.fromisoformat(json.loads((stage / "data/lights.json").read_text())["retrieved"]).isoformat()
+        label = f"Data retrieved · {retrieved}"
+        badge = (f'<svg xmlns="http://www.w3.org/2000/svg" width="188" height="22" role="img">'
+                 f'<title>{label}</title><rect width="100%" height="100%" rx="4" fill="#e4ece7"/>'
+                 f'<text x="8" y="15" fill="#183a43" font-family="system-ui,sans-serif" font-size="12">{label}</text></svg>')
+        (stage / "data-date.svg").write_text(badge, encoding="utf-8")
         index.write_text(page, encoding="utf-8")
         (stage / ".nojekyll").touch()
         if output.exists():
