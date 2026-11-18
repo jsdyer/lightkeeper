@@ -3,7 +3,7 @@ import argparse
 from collections import Counter
 from hashlib import sha256
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -101,7 +101,11 @@ def parse_section(code, data):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cached',type=Path,help='Directory containing index.html and original section files')
+    parser.add_argument('--retrieved-on', type=date.fromisoformat,
+                        help='Known original retrieval date of the cached source tables (YYYY-MM-DD)')
     args=parser.parse_args()
+    if args.retrieved_on and not args.cached:
+        parser.error('--retrieved-on applies only with --cached')
     index = sections((args.cached/'index.html').read_bytes() if args.cached else fetch(INDEX))
     def read(item):
         code, section = item
@@ -119,14 +123,23 @@ def main():
     if len({r['id'] for r in lights})!=len(lights):
         raise ValueError('Duplicate volume/light identifier; review before publishing')
     target=ROOT/'web/data/lights.json'
-    expected= len(json.loads(target.read_text())['lights']) if target.exists() else 3500
+    previous = json.loads(target.read_text()) if target.exists() else {}
+    expected = len(previous['lights']) if previous else 3500
     if len(lights)<max(3000,expected*.9):
         raise ValueError(f'Unexpected shrinkage: {len(lights)} eligible lights')
     attribution = ('Contains information published by the Canadian Coast Guard and Department of Fisheries and Oceans '
                    'licensed under the Canadian Coast Guard Open Information Licence. This Information is available in its '
                    'original format for free download on the Canadian Coast Guard website and the Monthly Edition of the '
                    'Notices to Mariners (NOTMAR) website.')
-    result={'attribution':attribution, 'licence':'https://www.canada.ca/en/canadian-coast-guard/corporate/publications/open-information-licence.html','retrieved':datetime.now(timezone.utc).date().isoformat(), 'sections':index, 'omitted':omitted,'lights':lights}
+    result={'attribution':attribution, 'licence':'https://www.canada.ca/en/canadian-coast-guard/corporate/publications/open-information-licence.html','sections':index, 'omitted':omitted,'lights':lights}
+    if not args.cached:
+        result['retrieved'] = datetime.now(timezone.utc).date().isoformat()
+    elif args.retrieved_on:
+        result['retrieved'] = args.retrieved_on.isoformat()
+    elif all(previous.get(key) == value for key, value in result.items()):
+        result['retrieved'] = previous.get('retrieved')
+    else:
+        result['retrieved'] = None
     stage=target.with_suffix('.tmp')
     stage.write_text(json.dumps(result,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
     stage.replace(target)

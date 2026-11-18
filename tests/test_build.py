@@ -33,6 +33,22 @@ class BuildTests(unittest.TestCase):
         self.assertFalse((self.root / "dist/private.txt").exists())
         self.assertTrue((self.root / "dist/.nojekyll").exists())
 
+    def test_catalogue_metadata_matches_the_published_snapshot(self):
+        build(self.root)
+        output = self.root / "dist"
+        status = json.loads((output / "data-status.json").read_text())
+        data = json.loads((output / "data/lights.json").read_text())
+        self.assertEqual(status["retrieved"], data["retrieved"])
+        self.assertEqual(status["lights"], len(data["lights"]))
+
+    def test_undated_import_stays_undated(self):
+        source = self.root / "web/data/lights.json"
+        data = json.loads(source.read_text())
+        data["retrieved"] = None
+        source.write_text(json.dumps(data))
+        build(self.root)
+        self.assertIn("Retrieval date unrecorded", (self.root / "dist/data-date.svg").read_text())
+
     def test_url_matches_tool_id(self):
         self.edit(url="/different/")
         with self.assertRaises(ValueError): metadata(self.root)

@@ -54,8 +54,13 @@ def build(root=ROOT):
         if re.search(r"\{\{[A-Z_]+\}\}", page):
             raise ValueError("Unresolved template placeholder in web/index.html")
         page = page.replace("BUILD_DATE_UTC", datetime.now(timezone.utc).date().isoformat())
-        retrieved = date.fromisoformat(json.loads((stage / "data/lights.json").read_text())["retrieved"]).isoformat()
-        label = f"Data retrieved · {retrieved}"
+        snapshot = json.loads((stage / "data/lights.json").read_text())
+        retrieved = snapshot.get("retrieved")
+        if retrieved is not None:
+            retrieved = date.fromisoformat(retrieved).isoformat()
+        status = {"retrieved": retrieved, "lights": len(snapshot["lights"]), "sections": len(snapshot["sections"])}
+        (stage / "data-status.json").write_text(json.dumps(status) + "\n", encoding="utf-8")
+        label = f"Data retrieved · {retrieved}" if retrieved else "Retrieval date unrecorded"
         badge = (f'<svg xmlns="http://www.w3.org/2000/svg" width="188" height="22" role="img">'
                  f'<title>{label}</title><rect width="100%" height="100%" rx="4" fill="#e4ece7"/>'
                  f'<text x="8" y="15" fill="#183a43" font-family="system-ui,sans-serif" font-size="12">{label}</text></svg>')
