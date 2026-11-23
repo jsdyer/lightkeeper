@@ -16,5 +16,10 @@
   "url": "/lightkeeper/",
   "source": "https://github.com/jsdyer/lightkeeper",
   "hosting": "project",
-  "access": "browser"
+  "access": "browser",
+  "data_info": {
+    "mode": "snapshot",
+    "detail": "The Coast Guard’s List of Lights gives each light’s position, colour and flash pattern.",
+    "cadence": "Twice monthly"
+  }
 }

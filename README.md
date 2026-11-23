@@ -1,5 +1,9 @@
 # Lightkeeper
 
+<!-- coolcode:guide -->
+Choose a light station and compare its character with neighbouring signals, or try Identify mode with playback started on request. Schematic flash widths are labelled when source timings are absent; use current official publications for navigation.
+<!-- /coolcode:guide -->
+
 [Open Lightkeeper](https://coolcode.ca/lightkeeper/) · [CoolCode catalogue](https://coolcode.ca/)
 
 Find Canadian light stations and buoys by name, light number, colour or area. Choose a record on the map or in the directory to read its published character, compare neighbouring signals, and share its permalink. Identify mode offers three signals with distinct light characteristics. Playback begins on request. The timeline stays readable while paused.
