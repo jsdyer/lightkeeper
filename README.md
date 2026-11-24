@@ -38,3 +38,11 @@ GitHub Actions exercises the built site in Chromium on desktop and mobile. Succe
 The refresh workflow checks all volume sections twice monthly. To run the same update locally, install the parser with `python3 -m pip install -r scripts/requirements.txt`, then run `python3 scripts/refresh.py`. A failed fetch, changed table format, duplicate final identifier or drop exceeding 10% of eligible lights aborts the update. The workflow commits the validated snapshot and dispatches the normal Pages checks before publication. The coverage and correction dates come from NOTMAR; the retrieval date records when the tables were read. Within a volume the light number identifies records, with a name suffix for a duplicated number in the source.
 
 For a saved source supplied with `--cached`, use `--retrieved-on YYYY-MM-DD` when the original acquisition date is known. An unchanged local copy preserves the recorded date. A changed local copy with unknown provenance displays “Retrieval date unrecorded.”
+
+<!-- schedule-reliability -->
+## Schedule reliability
+
+Public GitHub repositories can have scheduled workflows disabled after 60 days of inactivity. A separate weekly [schedule guard](.github/workflows/schedule-guard.yml) calls GitHub's enable-workflow API for an explicit list of refresh workflows and itself. It can restore workflows disabled for inactivity, preserves manually disabled workflows, and runs independently of collection failures.
+
+This is an interim mitigation, not a scheduling guarantee: GitHub does not document active-workflow renewal as a permanent exemption, and scheduled runs can be delayed or dropped. A scheduler on our own Linux server is the planned independent trigger. The guard does not collect data, create dummy commits, or change source/check timestamps; successful collection and published data freshness still need monitoring.
+<!-- /schedule-reliability -->
