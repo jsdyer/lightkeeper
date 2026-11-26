@@ -30,11 +30,16 @@ def main():
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(f"http://127.0.0.1:{server.server_port}/example-tool/")
                 page.get_by_role("heading", name="Peggy's Point", exact=True).first.wait_for()
+                assert page.locator("#map-light").inner_text() == "Peggy's Point"
+                assert "Red · Flashing · 5-second cycle" in page.locator("#map-pattern").inner_text()
+                page.get_by_role("button", name="See signal").click()
+                assert page.locator("#name").evaluate("el => el === document.activeElement")
                 assert "1.5 s" in page.locator("#preview").inner_text()
                 page.locator("#preview button").click()
                 assert page.locator("#preview button").inner_text() == "Pause signal"
                 page.locator("#query").fill("Point Atkinson")
                 page.locator("#rows button").filter(has_text="Point Atkinson").first.click()
+                assert page.locator("#map-light").inner_text() == "Point Atkinson"
                 assert "Fl(2)" in page.locator("#signal").inner_text()
                 assert "0.25 s" in page.locator("#preview").inner_text()
                 page.locator("#near").select_option(index=1)

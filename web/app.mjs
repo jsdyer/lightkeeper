@@ -76,11 +76,16 @@ function compare(){
   if(other) $('comparison').replaceChildren(detailCard(selected),detailCard(other));
 }
 
+function showSignal(){
+  $('name').focus();
+  $('name').scrollIntoView({block:'start'});
+}
+
 function records(){
   const list=$('rows');list.replaceChildren();
   for(const r of results.slice(0,limit)){
     const button=make('button',null,'row');button.type='button';button.setAttribute('aria-pressed',String(r.id===selected?.id));
-    button.append(make('span',r.name),make('span',signature(r)));button.onclick=()=>select(r,true);list.append(button);
+    button.append(make('span',r.name),make('span',signature(r)));button.onclick=()=>{select(r,true);showSignal();};list.append(button);
   }
   $('more').hidden=limit>=results.length;
   $('listcount').textContent=results.length?'Showing '+Math.min(limit,results.length)+' of '+results.length.toLocaleString()+' matching lights.':'No matches. Try a shorter name or another coast.';
@@ -90,6 +95,9 @@ function select(light,focusMap) {
   stopPlayback();selected=light;
   const section=data.sections[light.section];
   $('name').textContent=light.name;$('volume').textContent=section.volume+' · LL '+light.number;
+  $('map-light').textContent=light.name;
+  const colour=colours[light.colour] || light.colour;
+  $('map-pattern').textContent=[colour, family(light.rhythm), light.period ? light.period+'-second cycle' : ''].filter(Boolean).join(' · ');
   $('area').textContent=section.area;$('signal').textContent=signature(light);
   $('preview').replaceChildren();renderSignal($('preview'),light,true);
   const facts=[['Light character',family(light.rhythm)],['Colour',colours[light.colour]||light.colour],
@@ -127,7 +135,7 @@ function mapPoints(){
 }
 function filter(move){
   results=search(data.lights,data.sections,$('query').value,$('coast').value);limit=35;
-  $('matches').textContent=results.length.toLocaleString()+' matches · zoom for detail';records();
+  $('matches').textContent=results.length ? results.length.toLocaleString()+' matching lights · gold marker is selected' : 'No matching lights. Try another name or coast.';records();
   if(move && results.length){
     if(map) map.fitBounds(L.latLngBounds(results.map(r=>[r.lat,r.lon])),{maxZoom:11,padding:[15,15]});
     if(!results.includes(selected))select(results[0],false);
@@ -149,7 +157,7 @@ function exercise(){
       if(light.id!==r.id){option.disabled=true;$('answer').textContent='Try another light. Compare the colour, flash group and period.';return;}
       for(const b of $('options').children)b.disabled=true;
       $('answer').textContent='Correct. '+r.name+' shows '+signature(r)+'. ';
-      const link=make('button','Open this record');link.onclick=()=>{select(r,true);$('name').scrollIntoView({block:'center'});};$('answer').append(link);
+      const link=make('button','Open this record');link.onclick=()=>{select(r,true);showSignal();};$('answer').append(link);
     };
     $('options').append(option);
   }
@@ -168,6 +176,7 @@ async function open(){
   }
   $('coverage').textContent=data.lights.length.toLocaleString()+' lights · 3 Coast Guard volumes';
   $('dates').textContent=(data.retrieved ? 'Index retrieved '+data.retrieved : 'Retrieval date unrecorded')+'. Covers '+Object.keys(data.sections).length+' sections. '+data.omitted+' source rows lack a usable characteristic, position or identifier and are excluded.';
+  $('show-signal').onclick=showSignal;
   $('query').oninput=()=>filter(true);$('coast').onchange=()=>{filter(true);exercise();};
   $('near').onchange=compare;$('more').onclick=()=>{limit+=35;records();};$('new').onclick=exercise;
   window.addEventListener('hashchange',()=>{const id=new URLSearchParams(location.hash.slice(1)).get('light');const r=data.lights.find(l=>l.id===id);if(r&&r!==selected)select(r,true);});
