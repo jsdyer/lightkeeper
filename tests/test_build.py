@@ -4,6 +4,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from xml.etree import ElementTree
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from build import ROOT, build, metadata
 
@@ -40,6 +41,14 @@ class BuildTests(unittest.TestCase):
         data = json.loads((output / "data/lights.json").read_text())
         self.assertEqual(status["retrieved"], data["retrieved"])
         self.assertEqual(status["lights"], len(data["lights"]))
+        urls = [u.text for u in ElementTree.parse(output / "sitemap.xml").findall(".//{*}loc")]
+        self.assertEqual(len(urls), 1+len(data['lights'])+len({r['section'] for r in data['lights']}))
+        self.assertEqual(len(set(urls)), len(urls))
+        sample = (output/'records/atl-487/index.html').read_text()
+        self.assertIn('https://coolcode.ca/lightkeeper/records/atl-487/', sample)
+        self.assertIn('Lit 1.5 s · Dark 3.5 s', sample)
+        self.assertIn('atl327-en.php', sample)
+        self.assertIn('English Bay incident record', (output/'records/pac-387-d-2/index.html').read_text())
 
     def test_undated_import_stays_undated(self):
         source = self.root / "web/data/lights.json"

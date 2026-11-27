@@ -9,6 +9,8 @@ import shutil
 import tempfile
 from urllib.parse import urlsplit
 
+from records import generate, key as light_key, interpretation
+
 ROOT = Path(__file__).resolve().parents[1]
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 
@@ -16,7 +18,7 @@ SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 def metadata(root=ROOT):
     tool = json.loads((root / "tool.json").read_text(encoding="utf-8"))
     required = {"id", "title", "description", "category", "tags", "icon", "url", "source", "hosting", "access", "data_info"}
-    if not isinstance(tool, dict) or set(tool) != required:
+    if not isinstance(tool, dict) or set(tool) - {"result_directory", "dataset"} != required:
         raise ValueError("tool.json has missing or unknown fields")
     for key in required - {"tags", "data_info"}:
         if not isinstance(tool[key], str) or not tool[key].strip():
@@ -32,6 +34,13 @@ def metadata(root=ROOT):
             or not isinstance(info.get("detail"), str) or not info["detail"].strip()
             or ("cadence" in info and (not isinstance(info["cadence"], str) or not info["cadence"].strip()))):
         raise ValueError("Describe the tool's inputs and scheduled checks in data_info")
+    directory = tool.get('result_directory', {})
+    if directory.get('path') != 'records/' or not directory.get('title'):
+        raise ValueError('Declare the light record directory with its title')
+    dataset = tool.get('dataset', {})
+    if (dataset.get('file') != 'data/lights.json' or dataset.get('format') != 'JSON'
+            or dataset.get('section') != 'dataset' or not dataset.get('title')):
+        raise ValueError('Point the dataset catalogue entry at the native light snapshot')
     source = urlsplit(tool["source"])
     if source.scheme != "https" or not source.hostname or source.username is not None or any(c.isspace() for c in tool["source"]) or "\\" in tool["source"]:
         raise ValueError("source must be an HTTPS URL without credentials or whitespace")
@@ -56,13 +65,21 @@ def build(root=ROOT):
             if placeholder not in page:
                 raise ValueError(f"Missing template placeholder: {placeholder}")
             page = page.replace(placeholder, escape(tool[key], quote=True))
-        if re.search(r"\{\{[A-Z_]+\}\}", page):
-            raise ValueError("Unresolved template placeholder in web/index.html")
         page = page.replace("BUILD_DATE_UTC", datetime.now(timezone.utc).date().isoformat())
         snapshot = json.loads((stage / "data/lights.json").read_text())
+        example = generate(stage, snapshot)
+        if example is None:
+            raise ValueError('Light index contains no eligible records')
+        page = (page.replace('{{EXAMPLE_NAME}}', escape(example['name']))
+                    .replace('{{EXAMPLE_PATH}}', light_key(example))
+                    .replace('{{EXAMPLE_MEANING}}', escape(interpretation(example)))
+                    .replace('{{LIGHT_COUNT}}', format(len(snapshot['lights']), ',')))
         retrieved = snapshot.get("retrieved")
         if retrieved is not None:
             retrieved = date.fromisoformat(retrieved).isoformat()
+        page = page.replace('{{SOURCE_CAPTURE}}', f'Retrieved {retrieved}.' if retrieved else 'The retrieval date is unrecorded.')
+        if re.search(r"\{\{[A-Z_]+\}\}", page):
+            raise ValueError('Unresolved template placeholder in web/index.html')
         status = {"retrieved": retrieved, "lights": len(snapshot["lights"]), "sections": len(snapshot["sections"])}
         (stage / "data-status.json").write_text(json.dumps(status) + "\n", encoding="utf-8")
         label = f"Data retrieved · {retrieved}" if retrieved else "Retrieval date unrecorded"

@@ -1,7 +1,5 @@
 """Build a read-only light-characteristic index from Canadian Coast Guard tables."""
 import argparse
-from collections import Counter
-from hashlib import sha256
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 import json
@@ -11,6 +9,8 @@ from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 from lxml import html
+
+from light_ids import assign_ids
 
 INDEX = 'https://notmar.gc.ca/list-lights'
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,15 +115,9 @@ def main():
     with ThreadPoolExecutor(max_workers=5) as pool:
         for records, skips in pool.map(read,index.items()):
             lights.extend(records); omitted+=skips
-    # The official Atlantic table currently assigns LL 110 to two different buoys.
-    counts = Counter(r['id'] for r in lights)
-    for record in lights:
-        if counts[record['id']] > 1:
-            record['id'] += '-' + sha256(record['name'].encode()).hexdigest()[:8]
-    if len({r['id'] for r in lights})!=len(lights):
-        raise ValueError('Duplicate volume/light identifier; review before publishing')
     target=ROOT/'web/data/lights.json'
     previous = json.loads(target.read_text()) if target.exists() else {}
+    assign_ids(lights, previous.get('lights', []))
     expected = len(previous['lights']) if previous else 3500
     if len(lights)<max(3000,expected*.9):
         raise ValueError(f'Unexpected shrinkage: {len(lights)} eligible lights')

@@ -21,5 +21,15 @@
     "mode": "snapshot",
     "detail": "The Coast Guard’s List of Lights gives each light’s position, colour and flash pattern.",
     "cadence": "Twice monthly"
+  },
+  "result_directory": {
+    "path": "records/",
+    "title": "Canadian light signals and nearby stations by Coast Guard section"
+  },
+  "dataset": {
+    "title": "Canadian Coast Guard lights and signals",
+    "file": "data/lights.json",
+    "format": "JSON",
+    "section": "dataset"
   }
 }

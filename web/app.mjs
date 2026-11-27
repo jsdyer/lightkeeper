@@ -1,4 +1,4 @@
-import {challenge,colours,family,nearest,phaseAt,search,segments,signature} from './model.mjs';
+import {challenge,colours,distance,family,nearest,phaseAt,search,segments,signature} from './model.mjs';
 const $ = id => document.getElementById(id);
 const make = (tag, value, className) => {
   const node=document.createElement(tag);
@@ -64,10 +64,15 @@ function renderSignal(parent, light, interactive) {
   parent.append(box);
 }
 
+function profileLink(light) {
+  return './records/'+encodeURIComponent(light.id.replaceAll('.', '-d-'))+'/';
+}
+
 function detailCard(light) {
   const card=make('article');
   card.append(make('h3',light.name),make('p',signature(light)+' · '+(colours[light.colour]||light.colour)));
   renderSignal(card,light,false);
+  const link=make('a','Read '+light.name+' profile'); link.href=profileLink(light); card.append(link);
   return card;
 }
 
@@ -91,7 +96,7 @@ function records(){
   $('listcount').textContent=results.length?'Showing '+Math.min(limit,results.length)+' of '+results.length.toLocaleString()+' matching lights.':'No matches. Try a shorter name or another coast.';
 }
 
-function select(light,focusMap) {
+function select(light,focusMap,updateAddress=focusMap) {
   stopPlayback();selected=light;
   const section=data.sections[light.section];
   $('name').textContent=light.name;$('volume').textContent=section.volume+' · LL '+light.number;
@@ -107,7 +112,8 @@ function select(light,focusMap) {
   $('source').href=section.url;$('sectiondate').textContent='Section correction '+section.correction+' · see LL '+light.number;
   const hash='#light='+encodeURIComponent(light.id);
   $('deep').href=hash;
-  if(focusMap) history.replaceState(null,'',hash);
+  $('profile').href=profileLink(light);
+  if(updateAddress) history.replaceState(null,'',hash);
   if(map){
     if(marker)marker.remove();
     if(focusMap)map.setView([light.lat,light.lon],Math.max(map.getZoom(),11));
@@ -163,6 +169,24 @@ function exercise(){
   }
 }
 
+function restoreView(params) {
+  const view=params.get('view');
+  if(view==='signal') showSignal();
+  if(view==='map') $('map-light').scrollIntoView({block:'start'});
+  if(view==='compare') {
+    const other=data.lights.find(r=>r.id===params.get('compare'));
+    if(other && other.id!==selected.id) {
+      const control=$('near');
+      if(!Array.from(control.options).some(o=>o.value===other.id)) {
+        control.add(new Option(other.name+' · '+distance(selected,other).toFixed(1)+' km',other.id));
+      }
+      control.value=other.id;
+      compare();
+    }
+    $('compare-heading').scrollIntoView({block:'start'});
+  }
+}
+
 async function open(){
   const response=await fetch('./data/lights.json');
   if(!response.ok)throw Error('Unable to load index');
@@ -179,7 +203,12 @@ async function open(){
   $('show-signal').onclick=showSignal;
   $('query').oninput=()=>filter(true);$('coast').onchange=()=>{filter(true);exercise();};
   $('near').onchange=compare;$('more').onclick=()=>{limit+=35;records();};$('new').onclick=exercise;
-  window.addEventListener('hashchange',()=>{const id=new URLSearchParams(location.hash.slice(1)).get('light');const r=data.lights.find(l=>l.id===id);if(r&&r!==selected)select(r,true);});
+  window.addEventListener('hashchange',()=>{
+    const params=new URLSearchParams(location.hash.slice(1));
+    const light=data.lights.find(r=>r.id===params.get('light'));
+    if(light) { if(light!==selected) select(light,true,false); restoreView(params); }
+  });
   filter(false);select(initial,false);exercise();
+  restoreView(new URLSearchParams(location.hash.slice(1)));
 }
 open().catch(()=>{$('coverage').textContent='The station index could not load. Reload or open the official Coast Guard volumes below.';});

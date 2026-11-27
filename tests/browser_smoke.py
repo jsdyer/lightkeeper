@@ -2,6 +2,7 @@
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import os
 import shutil
 import tempfile
 import threading
@@ -24,7 +25,7 @@ def main():
         threading.Thread(target=server.serve_forever, daemon=True).start()
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch()
+                browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH"))
                 page = browser.new_page(viewport={"width": 1280, "height": 1000})
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
@@ -55,6 +56,29 @@ def main():
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
                 page.screenshot(path=str(screenshots / "mobile.png"), full_page=True)
+                page.locator('#profile').click()
+                assert page.locator('h1').inner_text() == 'Point Atkinson'
+                assert page.url.endswith('/records/pac-386/')
+                assert 'Lit 0.25 s' in page.locator('main').inner_text()
+                page.get_by_role('link', name='Open signal player', exact=True).click()
+                page.locator('#preview button').wait_for()
+                assert page.locator('#map-light').inner_text() == 'Point Atkinson'
+                assert page.locator('#preview button').inner_text() == 'Play signal'
+                page.locator('#profile').click()
+                pair = page.get_by_role('link', name='Compare both signals').last
+                pair.click()
+                page.locator('#near option:checked').wait_for(state='attached')
+                assert page.evaluate("document.querySelector('#near').value === new URLSearchParams(location.hash.slice(1)).get('compare')")
+                js_off=browser.new_context(java_script_enabled=False,viewport={'width':360,'height':800})
+                static=js_off.new_page()
+                static.goto(f'http://127.0.0.1:{server.server_port}/example-tool/')
+                static.get_by_role('link', name='Browse light profiles by area').click()
+                static.get_by_role('link', name="Peggy's Point", exact=True).click()
+                assert 'Dark 3.5 s' in static.locator('main').inner_text()
+                static.locator('.record-list li > a').first.click()
+                assert static.locator('h1').inner_text() != "Peggy's Point"
+                assert static.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                js_off.close()
                 assert not errors, errors
                 browser.close()
             print("Browser checks passed: project subpath, station lookup, timing, comparison, identify mode and mobile layout")
